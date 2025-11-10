@@ -20,12 +20,6 @@ void    error(t_error err_type, const char *context)
         case ERR_SEND:
             msg = "Failed to send ICMP packet";
             break;
-        case ERR_RECV:
-            msg = "Failed to receive ICMP packet";
-            break;
-        case ERR_TTL:
-            msg = "Failed to set socket TTL option";
-            break;
         case ERR_ARGS:
             msg = "Destination address required";
             break;
@@ -44,6 +38,7 @@ void    error(t_error err_type, const char *context)
         fprintf(stderr, RED "ft_ping: %s: %s\n" RESET, context, msg);
     else
         fprintf(stderr, RED "ft_ping: error: %s\n" RESET, msg);
+    gc_collect();
 
     exit(EXIT_FAILURE);
 }

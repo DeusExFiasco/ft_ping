@@ -16,6 +16,13 @@ BOLD "Options\n" RESET
     );
 }
 
+void    setup_socket(int sockfd) {
+    int ttl_val = 64;
+
+    if (setsockopt(sockfd, IPPROTO_IP, IP_TTL, &ttl_val, sizeof(ttl_val)) != 0)
+        error(ERR_SOCKET, NULL);
+}
+
 u_int16_t   checksum(void *b, int len) {
     u_int16_t  *buf = b;
     u_int32_t  sum = 0;
@@ -32,47 +39,18 @@ u_int16_t   checksum(void *b, int len) {
     return result;
 }
 
-char    *dns_lookup(const char *host, t_ipaddr *address_cont) {
-    struct addrinfo hints, *res;
-    char *ip = malloc(INET_ADDRSTRLEN);
-    if (!ip)
-        error(ERR_MEMORY, NULL);
-
-    ft_bzero(&hints, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_RAW;
-    if (getaddrinfo(host, NULL, &hints, &res) != 0)
-        error(ERR_DNS, host);
-
-    t_ipaddr *addr = (t_ipaddr *)res->ai_addr;
-    if (inet_ntop(AF_INET, &addr->sin_addr, ip, INET_ADDRSTRLEN) == NULL) {
-        free(ip);
-        freeaddrinfo(res);
-        error(ERR_DNS, host);
-    }
-    ft_memcpy(address_cont, addr, sizeof(t_ipaddr));
-    address_cont->sin_port = htons(PORT_NUMBER);
-    freeaddrinfo(res);
-
-    return ip;
+void    log_verbose(long bytes, char *address, uint16_t seq, int ident, int ttl, float rtt) {
+    printf("%ld bytes from %s: icmp_seq=%d ident=%d ttl=%d time=%.1f ms\n",
+        bytes, address, seq, ident, ttl, rtt);
 }
 
-char    *rev_dns_lookup(char *ip_addr) {
-    t_ipaddr        temp_addr;
-    unsigned int    len;
-    char            buf[NI_MAXHOST], *ret_buf;
+void    log_regular(long bytes, char *address, uint16_t seq, int ttl, float rtt) {
+    printf("%ld bytes from %s: icmp_seq=%d ttl=%d time=%.1f ms\n",
+        bytes, address, seq, ttl, rtt);
+}
 
-    ft_bzero(&temp_addr, sizeof(t_ipaddr));
-    temp_addr.sin_family = AF_INET;
-    if (inet_pton(AF_INET, ip_addr, &temp_addr.sin_addr) <= 0)
-        error(ERR_REVDNS, ip_addr);
-    len = sizeof(t_ipaddr);
-    if (getnameinfo((t_sockaddr *)&temp_addr, len, buf, sizeof(buf), NULL, 0, NI_NAMEREQD))
-        error(ERR_REVDNS, ip_addr);
-    ret_buf = (char *)malloc((ft_strlen(buf) + 1) * sizeof(char));
-    if (!ret_buf)
-        error(ERR_MEMORY, NULL);
-    ft_strcpy(ret_buf, buf);
-
-    return ret_buf;
+void    print_summary(char *host, int msg_count, int msg_received) {
+    printf(BOLD "\n--- %s ping statistics ---\n" RESET, host);
+    printf(BLUE "%d packets transmitted," GREEN " %d received," YELLOW " %.6f%% packet loss\n" RESET,
+           msg_count, msg_received, ((msg_count - msg_received) / (double)msg_count) * 100.0);
 }

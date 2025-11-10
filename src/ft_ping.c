@@ -20,7 +20,7 @@ static char *parse_opts(int count, char **input) {
             case 'f':
                 g_opt_flood = true;
                 break;
-            case 'q': // Note: if used, will negate ping logs regardless of other options
+            case 'q': // Note: will negate ping logs regardless of other options
                 g_opt_quiet = true;
                 break;
             case '?':
@@ -40,28 +40,18 @@ static void interrupt_handler(int interrupt) {
     g_pingloop = false;
 }
 
-static void setup_socket(int sockfd) {
-    t_time tv;
-    tv.tv_sec = 1;
-    tv.tv_usec = 0;
-    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0)
-        error(ERR_SOCKET, NULL);
-}
-
-static void recv_and_log_response(int sockfd, pid_t pid, int *recv_count) {
+static void recv_and_log_res(int sockfd, pid_t pid, int *recv_count) {
     char        recv_buf[1024];
     char        addr_str[INET_ADDRSTRLEN];
     t_ipaddr    r_addr;
     ssize_t     recvd;
 
-    recvd = receive_icmp_reply(sockfd, &r_addr, recv_buf);
-    if (recvd <= 0) {
-        if (errno == EINTR)
-            return;
-        error(ERR_RECV, NULL);
-    }
+    // Wait for reply
+    recvd = receive_icmp_reply(sockfd, &r_addr, recv_buf, g_opt_flood);
+    if (recvd <= 0 || errno == EINTR)
+        return;
     inet_ntop(AF_INET, &r_addr.sin_addr, addr_str, sizeof(addr_str));
-
+    // Extract reply info and verify checksum
     t_ipheader  *ip_hdr = (t_ipheader *)recv_buf;
     int         ip_hdr_len = (ip_hdr->ihl & 0x0f) * 4;
     t_icmp      *icmp_resp = (t_icmp *)(recv_buf + ip_hdr_len);
@@ -73,33 +63,24 @@ static void recv_and_log_response(int sockfd, pid_t pid, int *recv_count) {
         return;
     }
     icmp_resp->checksum = received_cs;
-
+    // Check reply length and create a log
     if (recvd - ip_hdr_len >= (int)(sizeof(t_icmp) + sizeof(t_time))) {
         if (icmp_resp->type == ICMP_ECHOREPLY &&
             ntohs(icmp_resp->un.echo.id) == (pid & 0xFFFF)) {
             t_time  tv_end;
             gettimeofday(&tv_end, NULL);
             t_time  *t_sent = (t_time *)(recv_buf + ip_hdr_len + sizeof(t_icmp));
-            double rtt = (tv_end.tv_sec - t_sent->tv_sec) * 1000.0
-                       + (tv_end.tv_usec - t_sent->tv_usec) / 1000.0;
+            double rtt = (tv_end.tv_sec - t_sent->tv_sec) * 1000.0 + (tv_end.tv_usec - t_sent->tv_usec) / 1000.0;
             
             if (g_opt_flood && !g_opt_quiet) { // Flood ping
                 printf("\b");
+                fflush(stdout); // Justified by Bonus!
             } else if (g_opt_verbose && !g_opt_quiet) { // Verbose logs
-                printf("%ld bytes from %s: icmp_seq=%d ident=%d ttl=%d time=%.1f ms\n",
-                    (long)(recvd - ip_hdr_len),
-                    addr_str,
-                    ntohs(icmp_resp->un.echo.sequence),
-                    ntohs(icmp_resp->un.echo.id),
-                    ip_hdr->ttl,
-                    rtt);
+                log_verbose((long)(recvd - ip_hdr_len), addr_str, ntohs(icmp_resp->un.echo.sequence),
+                            ntohs(icmp_resp->un.echo.id), ip_hdr->ttl, rtt);
             } else if (!g_opt_quiet) { // Regular logs
-                printf("%ld bytes from %s: icmp_seq=%d ttl=%d time=%.1f ms\n",
-                    (long)(recvd - ip_hdr_len),
-                    addr_str,
-                    ntohs(icmp_resp->un.echo.sequence),
-                    ip_hdr->ttl,
-                    rtt);
+                log_regular((long)(recvd - ip_hdr_len), addr_str, ntohs(icmp_resp->un.echo.sequence),
+                            ip_hdr->ttl, rtt);
             }
             (*recv_count)++;
             return;
@@ -111,13 +92,6 @@ static void recv_and_log_response(int sockfd, pid_t pid, int *recv_count) {
     }
 }
 
-static void print_summary(char *host, int msg_count, int msg_received) {
-    printf(BOLD "\n--- %s ping statistics ---\n" RESET, host);
-    printf(BLUE "%d packets transmitted," GREEN " %d received," YELLOW " %.6f%% packet loss\n" RESET,
-           msg_count, msg_received,
-           ((msg_count - msg_received) / (double)msg_count) * 100.0);
-}
-
 static void ping_loop(int sockfd, t_ipaddr *addr, char *ip, char *host, char *hostname) {
     char            send_buf[PING_PACKET_SIZE];
     unsigned int    seq_no = 0;
@@ -126,7 +100,6 @@ static void ping_loop(int sockfd, t_ipaddr *addr, char *ip, char *host, char *ho
     pid_t           pid = getpid();
 
     setup_socket(sockfd);
-
     if (g_opt_verbose) {
         printf("ping: sock4.fd: %d (socktype: %s), hints.ai_family: %s\n",
         sockfd, "SOCK_RAW", "AF_INET");
@@ -139,14 +112,15 @@ static void ping_loop(int sockfd, t_ipaddr *addr, char *ip, char *host, char *ho
     while (g_pingloop) {
         build_icmp_request((t_icmp *)send_buf, seq_no++, pid);
         send_icmp_request(sockfd, addr, send_buf);
-        if (g_opt_flood)
+        if (g_opt_flood && !g_opt_quiet) {
             printf(".");
+            fflush(stdout); // Justified by Bonus!
+        }
         msg_count++;
-        recv_and_log_response(sockfd, pid, &recv_count);
+        recv_and_log_res(sockfd, pid, &recv_count);
         if (!g_opt_flood)
             usleep(PING_INTERVAL_MCRS);
     }
-
     print_summary(host, msg_count, recv_count);
 }
 
@@ -173,9 +147,6 @@ int main(int argc, char **argv) {
     ping_loop(sockfd, &address_cont, ip, target, hostname);
 
     // Cleanup
-    if (ip)
-        free(ip);
-    if (hostname)
-        free(hostname);
+    gc_collect();
     return EXIT_SUCCESS;
 }
