@@ -23,6 +23,7 @@
 #define PING_PACKET_SIZE 64
 #define PING_INTERVAL_MCRS 1000000
 #define PORT_NUMBER 0
+#define BOLD "\033[1m"
 
 // Type Definitions
 
@@ -56,6 +57,5 @@ void        error(t_error err_type, const char *context);
 void        build_icmp_request(t_icmp *icmp_hdr, unsigned int seq_no, pid_t pid);
 ssize_t     send_icmp_request(int sockfd, t_ipaddr *addr, char *packet);
 ssize_t     receive_icmp_reply(int sockfd, t_ipaddr *r_addr, char *recv_buf);
-void        print_icmp_v(t_icmp *icmp_resp, t_ipaddr *r_addr, ssize_t recvd, int ip_hdr_len);
 
 #endif /* FT_PING_H */

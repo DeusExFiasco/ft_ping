@@ -27,10 +27,10 @@ void    error(t_error err_type, const char *context)
             msg = "Failed to set socket TTL option";
             break;
         case ERR_ARGS:
-            msg = "Invalid or missing arguments";
+            msg = "Destination address required";
             break;
         case ERR_INVALID:
-            msg = "Invalid option";
+            msg = "Invalid argument";
             break;
         case ERR_MEMORY:
             msg = "Memory allocation failed";

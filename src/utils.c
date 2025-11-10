@@ -4,20 +4,15 @@
 
 void    display_help(void) {
     printf(
-"Usage\n\
-ping [options] <destination>\n\
-\n\
-Options:\n\
-<destination>      DNS name or IP address\n\
--D                 print timestamps\n\
+BOLD "Usage\n" RESET
+"ping [options] <destination>\n\
+\n"
+BOLD "Options\n" RESET
+"<destination>      DNS name or IP address\n\
 -f                 flood ping\n\
--?                 print help and exit\n\
--H                 force reverse DNS name resolution (useful for numeric\n\
-                    destinations or for -f), override -n\n\
--n                 no reverse DNS name resolution, override -H\n\
 -q                 quiet output\n\
--U                 print user-to-user latency\n\
--v                 verbose output\n"
+-v                 verbose output\n\
+-?                 print help and exit\n"
     );
 }
 
@@ -38,22 +33,26 @@ u_int16_t   checksum(void *b, int len) {
 }
 
 char    *dns_lookup(const char *host, t_ipaddr *address_cont) {
-    t_hostent   *host_entity;
-    t_intraddr  *addr;
-    char        *ip;
-
-    ip = (char *)malloc(INET_ADDRSTRLEN);
+    struct addrinfo hints, *res;
+    char *ip = malloc(INET_ADDRSTRLEN);
     if (!ip)
         error(ERR_MEMORY, NULL);
-    host_entity = gethostbyname(host);
-    if (!host_entity)
+
+    ft_bzero(&hints, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_RAW;
+    if (getaddrinfo(host, NULL, &hints, &res) != 0)
         error(ERR_DNS, host);
-    addr = (t_intraddr *)host_entity->h_addr;
-    if (inet_ntop(AF_INET, addr, ip, INET_ADDRSTRLEN) == NULL)
+
+    t_ipaddr *addr = (t_ipaddr *)res->ai_addr;
+    if (inet_ntop(AF_INET, &addr->sin_addr, ip, INET_ADDRSTRLEN) == NULL) {
+        free(ip);
+        freeaddrinfo(res);
         error(ERR_DNS, host);
-    address_cont->sin_family = host_entity->h_addrtype;
+    }
+    ft_memcpy(address_cont, addr, sizeof(t_ipaddr));
     address_cont->sin_port = htons(PORT_NUMBER);
-    ft_memcpy(&address_cont->sin_addr, addr, sizeof(struct in_addr));
+    freeaddrinfo(res);
 
     return ip;
 }
@@ -63,6 +62,8 @@ char    *rev_dns_lookup(char *ip_addr) {
     unsigned int    len;
     char            buf[NI_MAXHOST], *ret_buf;
 
+    ft_bzero(&temp_addr, sizeof(t_ipaddr));
+    temp_addr.sin_family = AF_INET;
     if (inet_pton(AF_INET, ip_addr, &temp_addr.sin_addr) <= 0)
         error(ERR_REVDNS, ip_addr);
     len = sizeof(t_ipaddr);

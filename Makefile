@@ -32,7 +32,7 @@ $(SRC_DIR)/%.o: $(SRC_DIR)/%.c
 clean:
 	@rm -f $(OBJ)
 	@$(MAKE) -C libft clean
-	@rm libft/libft.a
+	@rm -f libft/libft.a
 	@printf "$(GREEN)Cleaned object files$(RESET)\n"
 
 fclean: clean

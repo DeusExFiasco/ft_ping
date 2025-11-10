@@ -24,36 +24,6 @@ ssize_t send_icmp_request(int sockfd, t_ipaddr *addr, char *packet) {
     return sent;
 }
 
-void    print_icmp_v(t_icmp *icmp_resp, t_ipaddr *r_addr, ssize_t recvd, int ip_hdr_len) {
-    char addr_str[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &(r_addr->sin_addr), addr_str, sizeof(addr_str));
-
-    printf("%ld bytes from %s: icmp_seq=%d ", 
-        recvd - ip_hdr_len, addr_str, ntohs(icmp_resp->un.echo.sequence));
-
-    switch (icmp_resp->type) {
-    case ICMP_DEST_UNREACH:
-        printf("Destination Unreachable");
-        break;
-    case ICMP_TIME_EXCEEDED:
-        printf("Time to live exceeded");
-        break;
-    case ICMP_SOURCE_QUENCH:
-        printf("Source Quench");
-        break;
-    case ICMP_REDIRECT:
-        printf("Redirect Message");
-        break;
-    case ICMP_PARAMETERPROB:
-        printf("Parameter Problem");
-        break;
-    default:
-        printf("ICMP type=%d code=%d", icmp_resp->type, icmp_resp->code);
-        break;
-    }
-    printf("\n");
-}
-
 ssize_t receive_icmp_reply(int sockfd, t_ipaddr *r_addr, char *recv_buf) {
     struct iovec    iov;
     struct msghdr   msg;
