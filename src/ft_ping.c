@@ -6,28 +6,40 @@ bool    g_pingloop = true;
 bool    g_opt_verbose = false;
 bool    g_opt_flood = false;
 bool    g_opt_quiet = false;
+int     g_ttl_val = 64;
 
 static char *parse_opts(int count, char **input) {
     char    *target = NULL;
 
     for (int i = 1; i < count; i++) {
         if (input[i][0] == '-') {
+            if (ft_strlen(input[i]) != 2) // Enforce single character flags
+                error(ERR_INVALID, input[i] + 1);
             switch (input[i][1])
             {
-            case 'v':
-                g_opt_verbose = true;
-                break;
-            case 'f':
-                g_opt_flood = true;
-                break;
-            case 'q': // Note: will negate ping logs regardless of other options
-                g_opt_quiet = true;
-                break;
-            case '?':
-                display_help();
-                exit(EXIT_SUCCESS);
-            default:
-                error(ERR_INVALID, input[i] + 1);
+                case 'v':
+                    g_opt_verbose = true;
+                    break;
+                case 'f':
+                    g_opt_flood = true;
+                    break;
+                case 'q': // Note: will negate ping logs regardless of other options
+                    g_opt_quiet = true;
+                    break;
+                case 't': // Check and set custom TTL value
+                    if (!input[i + 1] || !isnum(input[i + 1]))
+                        error(ERR_INVALID, input[i] + 1);
+                    int ttl = ft_atoi(input[i + 1]);
+                    if (ttl < 1 || ttl > 255)
+                        error(ERR_INVALID, input[i] + 1);
+                    g_ttl_val = ttl;
+                    i++;
+                    break;
+                case '?':
+                    display_help();
+                    exit(EXIT_SUCCESS);
+                default:
+                    error(ERR_INVALID, input[i] + 1);
             }
         } else
             target = input[i];
@@ -84,10 +96,11 @@ static void recv_and_log_res(int sockfd, pid_t pid, int *recv_count) {
             }
             (*recv_count)++;
             return;
-        }
+        } else if (g_opt_verbose && !g_opt_quiet) // Other responses warned in verbose mode
+            packet_warning(icmp_resp);
     } else {
-        if (g_opt_verbose)
-            fprintf(stderr, YELLOW "ft_ping: received short ICMP packet: %s\n" RESET, addr_str);
+        if (g_opt_verbose) // Packet is cut short, custom warning (verbose)
+            printf(YELLOW "ft_ping: received short ICMP packet: %s\n" RESET, addr_str);
         return;
     }
 }
@@ -99,7 +112,7 @@ static void ping_loop(int sockfd, t_ipaddr *addr, char *ip, char *host, char *ho
     int             recv_count = 0;
     pid_t           pid = getpid();
 
-    setup_socket(sockfd);
+    setup_socket(sockfd, g_ttl_val);
     if (g_opt_verbose) {
         printf("ping: sock4.fd: %d (socktype: %s), hints.ai_family: %s\n",
         sockfd, "SOCK_RAW", "AF_INET");

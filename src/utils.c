@@ -2,6 +2,22 @@
 
 #include "ft_ping.h"
 
+bool    isnum(char *str) {
+    if (!str || *str == '\0')
+        return false;
+    char *p = str;
+    if (*p == '+' || *p == '-')
+        p++;
+    if (*p == '\0')
+        return false;
+    while (*p) {
+        if (!ft_isdigit((unsigned char)*p))
+            return false;
+        p++;
+    }
+    return true;
+}
+
 void    display_help(void) {
     printf(
 BOLD "Usage\n" RESET
@@ -12,14 +28,13 @@ BOLD "Options\n" RESET
 -f                 flood ping\n\
 -q                 quiet output\n\
 -v                 verbose output\n\
+-t <ttl value>     manual TTL value (1 to 255)\n\
 -?                 print help and exit\n"
     );
 }
 
-void    setup_socket(int sockfd) {
-    int ttl_val = 64;
-
-    if (setsockopt(sockfd, IPPROTO_IP, IP_TTL, &ttl_val, sizeof(ttl_val)) != 0)
+void    setup_socket(int sockfd, int ttl) {
+    if (setsockopt(sockfd, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl)) != 0)
         error(ERR_SOCKET, NULL);
 }
 

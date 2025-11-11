@@ -2,6 +2,36 @@
 
 #include "ft_ping.h"
 
+void    packet_warning(t_icmp *icmp_resp)
+{
+    const char *msg;
+
+    switch (icmp_resp->type) {
+        case ICMP_DEST_UNREACH:
+            msg = "Destination Unreachable";
+            break;
+        case ICMP_ECHO:
+            msg = "Echo";
+            break;
+        case ICMP_TIME_EXCEEDED:
+            msg = "Time to live exceeded";
+            break;
+        case ICMP_SOURCE_QUENCH:
+            msg = "Source Quench";
+            break;
+        case ICMP_REDIRECT:
+            msg = "Redirect Message";
+            break;
+        case ICMP_PARAMETERPROB:
+            msg = "Parameter Problem";
+            break;
+        default: // Other unexpected response
+            printf(YELLOW "ICMP type=%d code=%d\n" RESET, icmp_resp->type, icmp_resp->code);
+            return;
+    }
+    printf(YELLOW "ft_ping: warning: %s\n" RESET, msg);
+}
+
 void    error(t_error err_type, const char *context)
 {
     const char *msg;
@@ -24,7 +54,7 @@ void    error(t_error err_type, const char *context)
             msg = "Destination address required";
             break;
         case ERR_INVALID:
-            msg = "Invalid argument";
+            msg = "Invalid argument or missing parameter";
             break;
         case ERR_MEMORY:
             msg = "Memory allocation failed";
