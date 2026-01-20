@@ -26,23 +26,3 @@ char    *dns_lookup(const char *host, t_ipaddr *address_cont) {
 
     return ip;
 }
-
-char    *rev_dns_lookup(char *ip_addr) {
-    t_ipaddr        temp_addr;
-    unsigned int    len;
-    char            buf[NI_MAXHOST], *ret_buf;
-
-    ft_bzero(&temp_addr, sizeof(t_ipaddr));
-    temp_addr.sin_family = AF_INET;
-    if (inet_pton(AF_INET, ip_addr, &temp_addr.sin_addr) <= 0)
-        error(ERR_REVDNS, ip_addr);
-    len = sizeof(t_ipaddr);
-    if (getnameinfo((t_sockaddr *)&temp_addr, len, buf, sizeof(buf), NULL, 0, NI_NAMEREQD))
-        error(ERR_REVDNS, ip_addr);
-    ret_buf = (char *)gc_malloc((ft_strlen(buf) + 1) * sizeof(char));
-    if (!ret_buf)
-        error(ERR_MEMORY, NULL);
-    ft_strcpy(ret_buf, buf);
-
-    return ret_buf;
-}

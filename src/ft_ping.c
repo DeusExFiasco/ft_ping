@@ -104,7 +104,7 @@ static void recv_and_log_res(int sockfd, pid_t pid, int *recv_count) {
     }
 }
 
-static void ping_loop(int sockfd, t_ipaddr *addr, char *ip, char *host, char *hostname) {
+static void ping_loop(int sockfd, t_ipaddr *addr, char *ip, char *host) {
     char            send_buf[PING_PACKET_SIZE];
     unsigned int    seq_no = 0;
     int             msg_count = 0;
@@ -113,10 +113,10 @@ static void ping_loop(int sockfd, t_ipaddr *addr, char *ip, char *host, char *ho
 
     setup_socket(sockfd, g_ttl_val);
     if (g_opt_verbose) {
-        printf("ping: sock4.fd: %d (socktype: %s), hints.ai_family: %s\n",
+        printf("ft_ping: sock4.fd: %d (socktype: %s), hints.ai_family: %s\n",
         sockfd, "SOCK_RAW", "AF_INET");
-        printf("\nai->ai_family: %s, ai->ai_canonname: '%s'\n",
-            "AF_INET", hostname ? hostname : host);
+        printf("ft_ping: ai->ai_family: %s, ai->ai_canonname: '%s'\n",
+            "AF_INET", host);
     }
     printf(BOLD "PING %s (%s) %d(%ld) bytes of data.\n" RESET,
         host, ip, PING_PACKET_SIZE, PING_PACKET_SIZE + sizeof(t_ipheader));
@@ -139,7 +139,7 @@ static void ping_loop(int sockfd, t_ipaddr *addr, char *ip, char *host, char *ho
 int main(int argc, char **argv) {
     char        *target;
     int         sockfd;
-    char        *ip, *hostname;
+    char        *ip;
     t_ipaddr    address_cont;
 
     // Process input and resolve host
@@ -149,14 +149,13 @@ int main(int argc, char **argv) {
     if (!target)
         error(ERR_ARGS, NULL);
     ip = dns_lookup(target, &address_cont);
-    hostname = rev_dns_lookup(ip);
 
     // Attempt pinging
     sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
     if (sockfd < 0)
         error(ERR_SOCKET, NULL);
     signal(SIGINT, interrupt_handler);
-    ping_loop(sockfd, &address_cont, ip, target, hostname);
+    ping_loop(sockfd, &address_cont, ip, target);
 
     // Cleanup
     gc_collect();
