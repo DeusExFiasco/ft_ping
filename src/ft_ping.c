@@ -15,8 +15,7 @@ static char *parse_opts(int count, char **input) {
         if (input[i][0] == '-') {
             if (ft_strlen(input[i]) != 2) // Enforce single character flags
                 error(ERR_INVALID, input[i] + 1);
-            switch (input[i][1])
-            {
+            switch (input[i][1]) {
                 case 'v':
                     g_opt_verbose = true;
                     break;
