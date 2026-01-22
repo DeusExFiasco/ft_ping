@@ -50,7 +50,7 @@ typedef enum e_errors {
 bool        isnum(char *str);
 void        display_help(void);
 char        *dns_lookup(const char *host, t_ipaddr *address_cont);
-char        *rev_dns_lookup(char *ip_addr);
+// char        *rev_dns_lookup(char *ip_addr);
 void        setup_socket(int sockfd, int ttl);
 u_int16_t   checksum(void *b, int len);
 void        build_icmp_request(t_icmp *icmp_hdr, unsigned int seq_no, pid_t pid);

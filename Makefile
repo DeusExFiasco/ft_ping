@@ -47,4 +47,7 @@ reclean: re .FORCE
 allclean: all .FORCE
 	$(MAKE) clean
 
+docker:
+	@docker build -t ft_ping .
+
 .PHONY: all clean fclean re reclean allclean .FORCE
