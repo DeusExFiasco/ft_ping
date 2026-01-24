@@ -113,9 +113,9 @@ static void ping_loop(int sockfd, t_ipaddr *addr, char *ip, char *host) {
 
     setup_socket(sockfd, g_ttl_val);
     if (g_opt_verbose) {
-        printf("ping: sock4.fd: %d (socktype: %s), hints.ai_family: %s\n",
+        printf("ft_ping: sock4.fd: %d (socktype: %s), hints.ai_family: %s\n",
         sockfd, "SOCK_RAW", "AF_INET");
-        printf("ping: ai->ai_family: %s, ai->ai_canonname: '%s'\n",
+        printf("ft_ping: ai->ai_family: %s, ai->ai_canonname: '%s'\n",
             "AF_INET", host);
     }
     printf(BOLD "PING %s (%s) %d(%ld) bytes of data.\n" RESET,

@@ -1,6 +1,6 @@
 # ft_ping
 
-Simple remake of Ping based on the Debian "inetutils" version. Also note that Norminette does not apply to mastery projects, as far as I can tell. The `fflush` function is justified as a nacessary extra function to allow for the flood ping feature.
+Simple remake of Ping based on the Debian "inetutils" version. Also note that Norminette does not apply to mastery projects, as far as I can tell. The `fflush` function is justified as a necessary extra function to allow for the flood ping feature.
 
 ### Included Flags
 - `-v`: verbose output, will print more information such as the socket info and the reverse DNS hostname

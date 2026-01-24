@@ -36,8 +36,7 @@ void    error(t_error err_type, const char *context)
 {
     const char *msg;
 
-    switch (err_type)
-    {
+    switch (err_type) {
         case ERR_SOCKET:
             msg = "Socket error";
             break;

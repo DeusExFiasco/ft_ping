@@ -18,7 +18,7 @@ OBJ = $(SRC_FILES:.c=.o)
 all: $(LIB) $(NAME)
 
 $(LIB):
-	$(MAKE) -C libft
+	@$(MAKE) -C libft
 
 $(NAME): $(OBJ) $(LIB)
 	@$(CC) $(FLAGS) -o $(NAME) $(OBJ) $(LIB)
@@ -42,10 +42,10 @@ fclean: clean
 re: fclean all
 
 reclean: re .FORCE
-	$(MAKE) clean
+	@$(MAKE) clean
 
 allclean: all .FORCE
-	$(MAKE) clean
+	@$(MAKE) clean
 
 docker:
 	@docker build -t ft_ping .
